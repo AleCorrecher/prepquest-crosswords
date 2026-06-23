@@ -1,0 +1,120 @@
+:root {
+  --ink: #18332d;
+  --paper: #f6f0e5;
+  --cream: #fffaf0;
+  --mint: #c8ead8;
+  --green: #1d6b58;
+  --coral: #f27757;
+  --yellow: #f5c958;
+  --line: #d8d2c5;
+  --white: #fffdf8;
+  --shadow: 0 18px 55px rgba(38, 61, 51, .12);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: "DM Sans", sans-serif; }
+button, input { font: inherit; }
+button { color: inherit; }
+.mobile-keyboard { position: fixed; left: 50%; bottom: 0; width: 1px; height: 1px; opacity: .01; border: 0; padding: 0; pointer-events: none; }
+
+.site-header { height: 72px; max-width: 1240px; margin: auto; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; }
+.brand { color: var(--ink); text-decoration: none; font-weight: 700; font-size: 20px; display: flex; align-items: center; gap: 10px; }
+.brand-mark { width: 34px; height: 34px; display: grid; place-items: center; color: white; background: var(--green); border-radius: 9px 9px 9px 2px; font-family: "Fraunces", serif; }
+.header-score { background: rgba(255,255,255,.55); border: 1px solid var(--line); border-radius: 30px; padding: 8px 15px; font-size: 14px; }
+.header-score > span:first-child { color: var(--coral); }
+.score-label { color: #6c7c76; }
+
+.hero { min-height: 390px; background: var(--mint); padding: 56px max(28px, calc((100vw - 1184px)/2)); display: flex; align-items: center; justify-content: space-between; overflow: hidden; position: relative; }
+.hero::after { content: ""; position: absolute; width: 330px; height: 330px; border: 2px dashed rgba(29,107,88,.2); border-radius: 50%; right: 9%; top: 10%; }
+.hero-copy { max-width: 650px; position: relative; z-index: 1; }
+.eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: 12px; font-weight: 700; color: var(--green); }
+h1, h2 { font-family: "Fraunces", serif; margin: 0; line-height: 1.05; }
+h1 { font-size: clamp(48px, 6.5vw, 82px); letter-spacing: -.045em; }
+h1 em { color: var(--coral); font-style: italic; }
+.hero-text { font-size: 18px; line-height: 1.6; max-width: 590px; margin: 25px 0 0; }
+.hero-art { width: 350px; height: 240px; position: relative; z-index: 1; }
+.tile { width: 68px; height: 68px; display: grid; place-items: center; background: var(--white); border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); border-radius: 8px; font: 700 30px "Fraunces", serif; position: absolute; transform: rotate(var(--r)); }
+.tile-a { top: 20px; left: 30px; --r: -7deg; }.tile-t { top: 80px; left: 100px; --r: 4deg; }.tile-o { top: 17px; left: 170px; --r: 7deg; }.tile-n { top: 95px; left: 235px; --r: -5deg; }
+.scribble { position: absolute; bottom: 12px; left: 55px; font: italic 22px "Fraunces", serif; transform: rotate(-5deg); }
+
+.game-shell { max-width: 1184px; margin: 64px auto; padding: 0 28px; }
+.puzzle-tabs { display: flex; border-bottom: 1px solid var(--line); gap: 10px; overflow-x: auto; }
+.puzzle-tab { border: 0; background: none; padding: 15px 20px; cursor: pointer; white-space: nowrap; color: #74827d; border-bottom: 3px solid transparent; }
+.puzzle-tab span { font-size: 11px; margin-right: 8px; font-weight: 700; }
+.puzzle-tab.active { color: var(--green); border-color: var(--coral); font-weight: 700; }
+.game-heading { display: flex; justify-content: space-between; align-items: end; margin: 42px 0 30px; gap: 24px; }
+.puzzle-kicker { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--coral); font-weight: 700; margin: 0 0 8px; }
+.game-heading h2 { font-size: 42px; }
+.progress-wrap { width: min(280px, 40%); }
+.progress-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; }
+.progress-track { height: 8px; background: #ded9cd; border-radius: 9px; overflow: hidden; }
+.progress-fill { height: 100%; width: 0; background: var(--coral); border-radius: inherit; transition: width .35s ease; }
+
+.game-layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(300px, .85fr); gap: 24px; align-items: stretch; }
+.board-card, .clue-card { background: var(--white); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); }
+.board-card { min-height: 590px; padding: 26px; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: auto; }
+.crossword { display: grid; gap: 2px; max-width: 100%; touch-action: manipulation; }
+.cell { position: relative; width: var(--cell-size); height: var(--cell-size); border: 0; border-radius: 3px; background: #e2ded4; padding: 0; }
+.cell.block { opacity: 0; pointer-events: none; }
+.cell.playable { background: white; border: 1.5px solid #9daaa5; cursor: pointer; display: grid; place-items: center; text-transform: uppercase; font-size: calc(var(--cell-size) * .48); font-weight: 700; }
+.cell.playable:hover { border-color: var(--green); }
+.cell.active { background: var(--yellow); border-color: var(--ink); }
+.cell.related { background: #e5f2eb; }
+.cell.solved { background: var(--mint); color: var(--green); border-color: var(--green); }
+.cell-number { position: absolute; top: 1px; left: 3px; font-size: max(7px, calc(var(--cell-size) * .2)); line-height: 1; font-weight: 700; }
+.keyboard-note { margin: 20px 0 0; color: #75817d; font-size: 12px; }
+.clue-card { padding: 32px; min-height: 380px; position: relative; }
+.clue-placeholder { text-align: center; margin-top: 86px; color: #6c7974; }
+.pointer-icon { display: inline-grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: var(--mint); color: var(--green); font-size: 22px; }
+.clue-placeholder h3 { color: var(--ink); margin: 18px 0 7px; }
+.clue-placeholder p { font-size: 14px; }
+.clue-meta { display: flex; justify-content: space-between; align-items: center; }
+.clue-number { text-transform: uppercase; color: var(--coral); font-size: 12px; font-weight: 700; letter-spacing: .1em; }
+.clue-length { font-size: 12px; color: #7a8581; }
+.clue-sentence { font: 700 25px/1.35 "Fraunces", serif; margin: 26px 0; }
+.blank { color: var(--coral); letter-spacing: .08em; }
+.primary-button { width: 100%; border: 0; background: var(--green); color: white; border-radius: 10px; padding: 14px 18px; font-weight: 700; display: flex; justify-content: space-between; cursor: pointer; }
+.primary-button:hover { background: #155848; }
+.feedback { padding: 13px 15px; margin: 0 0 18px; border-radius: 9px; background: #fff0d2; color: #6c4b0b; font-size: 14px; line-height: 1.45; border-left: 4px solid var(--yellow); }
+.feedback strong { display: block; color: var(--ink); margin-bottom: 3px; }
+.rule-card { animation: rise .3s ease; }
+.rule-heading { display: flex; align-items: center; gap: 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--green); font-weight: 700; }
+.rule-check { width: 28px; height: 28px; display: grid; place-items: center; background: var(--mint); border-radius: 50%; }
+.rule-card h3 { font: 700 36px "Fraunces", serif; color: var(--coral); margin: 23px 0 12px; }
+.rule-card p { line-height: 1.6; color: #52625c; }
+.text-button { border: 0; background: none; padding: 15px 0 0; color: var(--green); font-weight: 700; cursor: pointer; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+
+.clues-section { margin-top: 52px; }
+.clues-heading { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); padding-bottom: 15px; }
+.clues-heading h3 { font: 700 27px "Fraunces", serif; margin: 0; }
+.reset-button { background: none; border: 0; color: #687670; cursor: pointer; font-size: 13px; }
+.clue-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; }
+.clue-columns h4 { color: var(--coral); text-transform: uppercase; letter-spacing: .1em; font-size: 12px; margin: 26px 0 12px; }
+.clue-list { list-style: none; padding: 0; margin: 0; }
+.clue-list li { margin-bottom: 4px; }
+.clue-list button { width: 100%; border: 0; background: transparent; text-align: left; cursor: pointer; border-radius: 7px; padding: 10px; line-height: 1.4; display: flex; gap: 10px; }
+.clue-list button:hover, .clue-list button.selected { background: rgba(200,234,216,.45); }
+.clue-list button.solved { color: #687670; text-decoration: line-through; }
+.list-number { color: var(--green); font-weight: 700; min-width: 22px; }
+
+.celebration { position: fixed; inset: 0; z-index: 20; background: rgba(24,51,45,.75); display: grid; place-items: center; padding: 20px; }
+.celebration[hidden] { display: none; }
+.celebration-card { background: var(--cream); border-radius: 20px; padding: 45px; text-align: center; max-width: 470px; box-shadow: var(--shadow); }
+.celebration-card h2 { font-size: 44px; }.celebration-card p:not(.eyebrow) { line-height: 1.6; }.confetti { color: var(--coral); font-size: 32px; letter-spacing: .3em; margin-bottom: 15px; }
+footer { border-top: 1px solid var(--line); max-width: 1184px; margin: 80px auto 0; padding: 30px 28px; display: flex; justify-content: space-between; font-size: 12px; color: #71807a; }
+
+@media (max-width: 850px) {
+  .hero { min-height: auto; padding-top: 54px; padding-bottom: 54px; }.hero-art { display: none; }
+  .game-layout { grid-template-columns: 1fr; }.clue-card { min-height: 320px; }.clue-placeholder { margin-top: 55px; }
+  .board-card { min-height: 480px; padding: 16px; }.clue-columns { gap: 20px; }
+}
+@media (max-width: 560px) {
+  .site-header { padding: 0 16px; }.hero { padding-left: 20px; padding-right: 20px; }.hero-text { font-size: 16px; }
+  .game-shell { margin-top: 38px; padding: 0 14px; }.game-heading { align-items: start; flex-direction: column; }.game-heading h2 { font-size: 35px; }.progress-wrap { width: 100%; }
+  .puzzle-tab { padding: 13px 12px; }.puzzle-tab span { display: none; }.board-card { min-height: 390px; }.keyboard-note { display: none; }
+  .clue-card { padding: 24px; }.clue-columns { grid-template-columns: 1fr; gap: 5px; }.clue-sentence { font-size: 22px; }
+  footer { flex-direction: column; gap: 4px; }.celebration-card { padding: 35px 24px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
