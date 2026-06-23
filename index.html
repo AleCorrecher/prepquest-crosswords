@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Practice English prepositions through interactive crosswords with helpful hints and grammar explanations.">
+  <title>PrepQuest — English Preposition Crosswords</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#" aria-label="PrepQuest home"><span class="brand-mark">P</span> PrepQuest</a>
+    <div class="header-score" aria-label="Total stars earned"><span aria-hidden="true">★</span> <strong id="total-stars">0</strong><span class="score-label"> / 36</span></div>
+  </header>
+
+  <main>
+    <input id="mobile-keyboard" class="mobile-keyboard" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" aria-label="Type your crossword answer">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">English practice, one square at a time</p>
+        <h1>Find the missing<br><em>preposition.</em></h1>
+        <p class="hero-text">Read each sentence, complete the crossword, and discover the grammar rule behind every answer.</p>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <span class="tile tile-a">A</span><span class="tile tile-t">T</span><span class="tile tile-o">O</span><span class="tile tile-n">N</span>
+        <span class="scribble">in · on · at</span>
+      </div>
+    </section>
+
+    <section class="game-shell" aria-labelledby="puzzle-title">
+      <nav class="puzzle-tabs" aria-label="Choose a crossword">
+        <button class="puzzle-tab active" data-puzzle="0"><span>01</span> Time & Place</button>
+        <button class="puzzle-tab" data-puzzle="1"><span>02</span> Moving Around</button>
+        <button class="puzzle-tab" data-puzzle="2"><span>03</span> Connections</button>
+      </nav>
+
+      <div class="game-heading">
+        <div>
+          <p class="puzzle-kicker" id="puzzle-kicker">Crossword 01 · Beginner</p>
+          <h2 id="puzzle-title">Time & Place</h2>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>Progress</span><strong id="progress-text">0 / 12</strong></div>
+          <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+        </div>
+      </div>
+
+      <div class="game-layout">
+        <section class="board-card" aria-label="Crossword board">
+          <div id="crossword" class="crossword" role="grid" aria-label="Interactive crossword grid"></div>
+          <p class="keyboard-note">Tip: select a clue, then type. Use the arrow keys to move.</p>
+        </section>
+
+        <aside class="clue-card" aria-live="polite">
+          <div id="clue-placeholder" class="clue-placeholder">
+            <span class="pointer-icon" aria-hidden="true">↖</span>
+            <h3>Choose a clue</h3>
+            <p>Click any numbered square or clue to begin.</p>
+          </div>
+
+          <div id="clue-active" class="clue-active" hidden>
+            <div class="clue-meta"><span id="clue-number" class="clue-number">1 Across</span><span id="clue-length" class="clue-length">2 letters</span></div>
+            <p id="clue-sentence" class="clue-sentence"></p>
+            <div id="feedback" class="feedback" hidden></div>
+            <button id="check-answer" class="primary-button">Check answer <span>→</span></button>
+          </div>
+
+          <div id="rule-card" class="rule-card" hidden>
+            <div class="rule-heading"><span class="rule-check">✓</span><span>Why it works</span></div>
+            <h3 id="rule-answer"></h3>
+            <p id="rule-text"></p>
+            <button id="next-clue" class="text-button">Next unsolved clue →</button>
+          </div>
+        </aside>
+      </div>
+
+      <div class="clues-section">
+        <div class="clues-heading">
+          <h3>All clues</h3>
+          <button id="reset-puzzle" class="reset-button">↻ Reset crossword</button>
+        </div>
+        <div class="clue-columns">
+          <div><h4>Across</h4><ol id="across-clues" class="clue-list"></ol></div>
+          <div><h4>Down</h4><ol id="down-clues" class="clue-list"></ol></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="celebration" class="celebration" hidden role="dialog" aria-modal="true" aria-labelledby="celebration-title">
+    <div class="celebration-card">
+      <div class="confetti" aria-hidden="true">✦ ★ ✦</div>
+      <p class="eyebrow">Crossword complete</p>
+      <h2 id="celebration-title">Brilliant work!</h2>
+      <p>You solved all 12 prepositions and unlocked every grammar rule.</p>
+      <button id="continue-button" class="primary-button">Try another crossword <span>→</span></button>
+    </div>
+  </div>
+
+  <footer><p>Made for curious English learners.</p><p>Practice. Notice. Remember.</p></footer>
+  <script src="app.js"></script>
+</body>
+</html>
