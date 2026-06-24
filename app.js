@@ -52,105 +52,142 @@ const PUZZLES = [
   }
 ];
 
+// Precomputed connected layouts: [entry index, row, column, direction].
+// Every puzzle has one network, 11 real intersections, and no accidental touches.
+const CONNECTED_LAYOUTS = [
+  [[0,0,1,"across"],[11,0,2,"down"],[8,1,4,"down"],[6,1,7,"down"],[4,1,9,"down"],[3,2,7,"across"],[7,3,0,"across"],[9,3,1,"down"],[2,5,0,"across"],[5,5,3,"across"],[10,5,3,"down"],[1,5,6,"down"]],
+  [[6,0,13,"down"],[8,1,11,"across"],[0,2,7,"across"],[1,2,10,"down"],[7,3,12,"across"],[10,5,6,"down"],[5,5,8,"across"],[3,5,8,"down"],[11,7,3,"down"],[2,7,6,"across"],[9,8,2,"across"],[4,11,0,"across"]],
+  [[0,0,12,"down"],[4,2,12,"across"],[3,3,3,"down"],[8,3,5,"down"],[10,3,8,"down"],[7,4,1,"across"],[1,4,10,"across"],[9,4,10,"down"],[2,6,4,"across"],[11,7,2,"down"],[5,9,0,"across"],[6,9,6,"down"]]
+];
+
 const state = { puzzle: 0, selected: null, activeIndex: 0, solved: new Set(), letters: {}, attempts: {}, layout: null };
 const savedSolved = JSON.parse(localStorage.getItem("prepquest-solved") || "{}");
 
 function makeLayout(entries) {
   const words = entries.map((e, i) => ({ answer: e[0].toUpperCase(), dataIndex: i }));
-  const remaining = [...words].sort((a,b) => b.answer.length - a.answer.length);
-  const clusters = [];
+  const puzzleIndex=PUZZLES.findIndex(puzzle=>puzzle.entries===entries);
+  const preset=CONNECTED_LAYOUTS[puzzleIndex];
+  if(preset){
+    const placed=preset.map(([dataIndex,row,col,dir])=>{
+      const item=words[dataIndex],dr=dir==="down"?1:0,dc=dir==="across"?1:0;
+      const cells=item.answer.split("").map((_,i)=>[row+dr*i,col+dc*i]);
+      return {...item,row,col,dir,cells};
+    });
+    const minR=0,minC=0;
+    const maxR=Math.max(...placed.flatMap(item=>item.cells.map(cell=>cell[0])));
+    const maxC=Math.max(...placed.flatMap(item=>item.cells.map(cell=>cell[1])));
+    const grid=Array.from({length:maxR+1},()=>Array(maxC+1).fill(null));
+    for(const item of placed)item.cells.forEach(([r,c],i)=>{
+      if(!grid[r][c])grid[r][c]={letter:item.answer[i],entries:[]};
+      grid[r][c].entries.push(item.dataIndex);
+    });
+    const starts=new Map();let number=0;
+    placed.sort((a,b)=>a.row-b.row||a.col-b.col||(a.dir==="across"?-1:1));
+    for(const item of placed){
+      const key=`${item.row},${item.col}`;
+      if(!starts.has(key))starts.set(key,++number);
+      item.number=starts.get(key);
+    }
+    return {grid,placed,minR,maxR,minC,maxC};
+  }
+  const size=31, center=15;
+  let solution=null;
 
-  // Build small, well-spaced crossword islands. This keeps unrelated words from
-  // touching and creating the dense blocks that are hard to read on a phone.
-  while (remaining.length) {
-    const size = 25;
-    const clusterGrid = Array.from({ length: size }, () => Array(size).fill(null));
-    const clusterPlaced = [];
+  // Try different starting words. Every later word must cross the existing
+  // network, so a successful result is always one connected crossword.
+  for (const seed of [...words].sort((a,b)=>b.answer.length-a.answer.length)) {
+    const grid=Array.from({length:size},()=>Array(size).fill(null));
+    const placed=[];
+    let searches=0;
 
-    function canPlace(word, row, col, dir) {
-      const dr = dir === "down" ? 1 : 0, dc = dir === "across" ? 1 : 0;
-      const endR = row + dr * (word.length - 1), endC = col + dc * (word.length - 1);
-      if (row < 1 || col < 1 || endR >= size - 1 || endC >= size - 1) return -1;
-      let crosses = 0;
-      for (let i = 0; i < word.length; i++) {
-        const r = row + dr * i, c = col + dc * i, existing = clusterGrid[r][c];
-        if (existing) {
-          if (existing.letter !== word[i] || existing.dirs.has(dir)) return -1;
+    function canPlace(word,row,col,dir) {
+      const dr=dir==="down"?1:0, dc=dir==="across"?1:0;
+      const endR=row+dr*(word.length-1), endC=col+dc*(word.length-1);
+      if(row<1||col<1||endR>=size-1||endC>=size-1)return -1;
+      let crosses=0;
+      for(let i=0;i<word.length;i++){
+        const r=row+dr*i,c=col+dc*i,existing=grid[r][c];
+        if(existing){
+          if(existing.letter!==word[i]||existing.dirs.has(dir))return -1;
           crosses++;
-        } else {
-          // A new horizontal letter needs empty space above and below; a new
-          // vertical letter needs empty space on both sides.
-          if (dir === "across" && (clusterGrid[r-1][c] || clusterGrid[r+1][c])) return -1;
-          if (dir === "down" && (clusterGrid[r][c-1] || clusterGrid[r][c+1])) return -1;
+        }else{
+          if(dir==="across"&&(grid[r-1][c]||grid[r+1][c]))return -1;
+          if(dir==="down"&&(grid[r][c-1]||grid[r][c+1]))return -1;
         }
       }
-      if (clusterGrid[row-dr]?.[col-dc] || clusterGrid[endR+dr]?.[endC+dc]) return -1;
+      if(grid[row-dr]?.[col-dc]||grid[endR+dr]?.[endC+dc])return -1;
       return crosses;
     }
 
-    function put(item, row, col, dir) {
-      const dr = dir === "down" ? 1 : 0, dc = dir === "across" ? 1 : 0, cells = [];
-      for (let i = 0; i < item.answer.length; i++) {
-        const r = row + dr * i, c = col + dc * i;
-        if (!clusterGrid[r][c]) clusterGrid[r][c] = { letter: item.answer[i], dirs: new Set(), entries: [] };
-        clusterGrid[r][c].dirs.add(dir); clusterGrid[r][c].entries.push(item.dataIndex); cells.push([r,c]);
+    function put(item,row,col,dir){
+      const dr=dir==="down"?1:0,dc=dir==="across"?1:0,cells=[],changes=[];
+      for(let i=0;i<item.answer.length;i++){
+        const r=row+dr*i,c=col+dc*i,created=!grid[r][c];
+        if(created)grid[r][c]={letter:item.answer[i],dirs:new Set(),entries:[]};
+        grid[r][c].dirs.add(dir);grid[r][c].entries.push(item.dataIndex);
+        cells.push([r,c]);changes.push({r,c,created});
       }
-      clusterPlaced.push({ ...item, row, col, dir, cells });
+      placed.push({...item,row,col,dir,cells});
+      return changes;
     }
 
-    const seed = remaining.shift();
-    put(seed, 12, 12 - Math.floor(seed.answer.length / 2), "across");
+    function undo(changes,dir){
+      placed.pop();
+      for(const {r,c,created} of changes){
+        if(created)grid[r][c]=null;
+        else{grid[r][c].dirs.delete(dir);grid[r][c].entries.pop();}
+      }
+    }
 
-    while (true) {
-      const candidates = remaining.map(item => {
-        const options = [], seen = new Set();
-        for (let r=1; r<size-1; r++) for (let c=1; c<size-1; c++) {
-          if (!clusterGrid[r][c]) continue;
-          for (let i=0; i<item.answer.length; i++) {
-            if (item.answer[i] !== clusterGrid[r][c].letter) continue;
-            for (const dir of ["across","down"]) {
-              const sr=r-(dir==="down"?i:0), sc=c-(dir==="across"?i:0), key=`${sr},${sc},${dir}`;
-              if (seen.has(key)) continue; seen.add(key);
-              const score=canPlace(item.answer,sr,sc,dir);
-              if (score>0) options.push({r:sr,c:sc,dir,score});
-            }
+    function optionsFor(item){
+      const options=[],seen=new Set();
+      for(let r=1;r<size-1;r++)for(let c=1;c<size-1;c++){
+        if(!grid[r][c])continue;
+        for(let i=0;i<item.answer.length;i++){
+          if(item.answer[i]!==grid[r][c].letter)continue;
+          for(const dir of ["across","down"]){
+            const sr=r-(dir==="down"?i:0),sc=c-(dir==="across"?i:0),key=`${sr},${sc},${dir}`;
+            if(seen.has(key))continue;seen.add(key);
+            const crosses=canPlace(item.answer,sr,sc,dir);
+            if(crosses>0)options.push({r:sr,c:sc,dir,crosses});
           }
         }
-        options.sort((a,b)=>a.score-b.score || (Math.abs(a.r-12)+Math.abs(a.c-12))-(Math.abs(b.r-12)+Math.abs(b.c-12)));
-        return { item, options };
-      }).filter(candidate => candidate.options.length)
-        .sort((a,b)=>a.options.length-b.options.length || b.item.answer.length-a.item.answer.length);
-
-      if (!candidates.length) break;
-      const chosen=candidates[0], option=chosen.options[0];
-      put(chosen.item,option.r,option.c,option.dir);
-      remaining.splice(remaining.indexOf(chosen.item),1);
+      }
+      return options.sort((a,b)=>a.crosses-b.crosses||(Math.abs(a.r-center)+Math.abs(a.c-center))-(Math.abs(b.r-center)+Math.abs(b.c-center)));
     }
 
-    const minR=Math.min(...clusterPlaced.flatMap(p=>p.cells.map(cell=>cell[0])));
-    const maxR=Math.max(...clusterPlaced.flatMap(p=>p.cells.map(cell=>cell[0])));
-    const minC=Math.min(...clusterPlaced.flatMap(p=>p.cells.map(cell=>cell[1])));
-    const maxC=Math.max(...clusterPlaced.flatMap(p=>p.cells.map(cell=>cell[1])));
-    clusters.push({placed:clusterPlaced,minR,maxR,minC,maxC,width:maxC-minC+1,height:maxR-minR+1});
+    function solve(remaining){
+      if(!remaining.length)return true;
+      if(++searches>350000)return false;
+      const candidates=remaining.map(item=>({item,options:optionsFor(item)}))
+        .filter(candidate=>candidate.options.length)
+        .sort((a,b)=>a.options.length-b.options.length||b.item.answer.length-a.item.answer.length);
+      if(!candidates.length)return false;
+
+      // Placement order matters: a word with no option yet can become available
+      // after another word adds new crossing letters, so try every candidate.
+      for(const candidate of candidates){
+        const next=remaining.filter(item=>item!==candidate.item);
+        for(const option of candidate.options){
+          const changes=put(candidate.item,option.r,option.c,option.dir);
+          if(solve(next))return true;
+          undo(changes,option.dir);
+        }
+      }
+      return false;
+    }
+
+    put(seed,center,center-Math.floor(seed.answer.length/2),"across");
+    const remaining=words.filter(item=>item!==seed);
+    if(solve(remaining)){solution={grid,placed};break;}
   }
 
-  // Pack the islands with two empty rows/columns between them.
-  clusters.sort((a,b)=>b.width-a.width);
-  const placed=[]; let cursorR=0,cursorC=0,rowHeight=0,maxC=0;
-  for (const cluster of clusters) {
-    if (cursorC && cursorC+cluster.width>16) { cursorR+=rowHeight+3; cursorC=0; rowHeight=0; }
-    const dr=cursorR-cluster.minR, dc=cursorC-cluster.minC;
-    for (const item of cluster.placed) placed.push({...item,row:item.row+dr,col:item.col+dc,cells:item.cells.map(([r,c])=>[r+dr,c+dc])});
-    cursorC+=cluster.width+3; rowHeight=Math.max(rowHeight,cluster.height); maxC=Math.max(maxC,cursorC-3);
-  }
-
-  const maxR=Math.max(...placed.flatMap(p=>p.cells.map(cell=>cell[0]))), finalMaxC=Math.max(...placed.flatMap(p=>p.cells.map(cell=>cell[1])));
-  const grid=Array.from({length:maxR+1},()=>Array(finalMaxC+1).fill(null));
-  for (const item of placed) item.cells.forEach(([r,c],i)=>{
-    if (!grid[r][c]) grid[r][c]={letter:item.answer[i],entries:[]};
-    grid[r][c].entries.push(item.dataIndex);
-  });
-  const minR=0, minC=0;
+  if(!solution)throw new Error("Could not build a connected crossword");
+  const {grid,placed}=solution;
+  const minR=Math.min(...placed.flatMap(p=>p.cells.map(cell=>cell[0])));
+  const maxR=Math.max(...placed.flatMap(p=>p.cells.map(cell=>cell[0])));
+  const minC=Math.min(...placed.flatMap(p=>p.cells.map(cell=>cell[1])));
+  const maxC=Math.max(...placed.flatMap(p=>p.cells.map(cell=>cell[1])));
   const starts = new Map();
   placed.sort((a,b) => a.row-b.row || a.col-b.col || (a.dir === "across" ? -1 : 1));
   let number = 0;
@@ -159,7 +196,7 @@ function makeLayout(entries) {
     if (!starts.has(key)) starts.set(key, ++number);
     p.number = starts.get(key);
   }
-  return { grid, placed, minR, maxR, minC, maxC:finalMaxC };
+  return {grid,placed,minR,maxR,minC,maxC};
 }
 
 function renderPuzzle(index) {
